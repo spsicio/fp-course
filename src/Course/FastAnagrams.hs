@@ -16,8 +16,16 @@ fastAnagrams ::
     Chars ->
     FilePath ->
     IO (List Chars)
-fastAnagrams =
-    error "todo: Course.FastAnagrams#fastAnagrams"
+fastAnagrams word file =
+    let words = NoCaseString <$> permutations word
+        filter' = flip filter
+        member' = flip S.member
+        makeSet = S.fromList . hlist . (NoCaseString <$>) . lines
+     in (ncString <$>)
+            . filter' words
+            . member'
+            . makeSet
+            <$> readFile file
 
 newtype NoCaseString
     = NoCaseString
@@ -31,6 +39,9 @@ ncString (NoCaseString s) =
 
 instance Eq NoCaseString where
     (==) = (==) `on` map toLower . ncString
+
+instance Ord NoCaseString where
+    compare = compare `on` map toLower . ncString
 
 instance Show NoCaseString where
     show = show . ncString
