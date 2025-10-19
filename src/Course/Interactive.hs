@@ -90,8 +90,10 @@ data Op
 -}
 convertInteractive ::
     IO ()
-convertInteractive =
-    error "todo: Course.Interactive#convertInteractive"
+convertInteractive = do
+    putStr "Enter a string: "
+    str <- getLine
+    putStrLn $ toUpper <$> str
 
 {- |
 
@@ -119,8 +121,13 @@ convertInteractive =
 -}
 reverseInteractive ::
     IO ()
-reverseInteractive =
-    error "todo: Course.Interactive#reverseInteractive"
+reverseInteractive = do
+    putStr "Enter a file name to read: "
+    inFile <- getLine
+    str <- readFile inFile
+    putStr "Enter a file name to write: "
+    outFile <- getLine
+    writeFile outFile $ reverse str
 
 {- |
 
@@ -146,8 +153,16 @@ reverseInteractive =
 -}
 encodeInteractive ::
     IO ()
-encodeInteractive =
-    error "todo: Course.Interactive#encodeInteractive"
+encodeInteractive = do
+    putStr "Enter a string: "
+    str <- getLine
+    putStrLn $ foldRight aux "" str
+  where
+    aux c s
+        | c == ' ' = "%20" ++ s
+        | c == '\t' = "%09" ++ s
+        | c == '\"' = "%22" ++ s
+        | otherwise = c :. s
 
 interactive ::
     IO ()
