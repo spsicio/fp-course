@@ -222,6 +222,64 @@ data Digit3
     | D3 Digit Digit Digit
     deriving (Eq)
 
+showDigit3 :: Digit3 -> Chars
+showDigit3 (D1 d) = showDigit d
+showDigit3 (D2 d1 d2) =
+    let pre ++? post =
+            pre ++ if post == Zero then Nil else '-' :. showDigit post
+     in case d1 of
+            Zero -> showDigit d2
+            One -> case d2 of
+                Zero -> "ten"
+                One -> "eleven"
+                Two -> "twelve"
+                Three -> "thirteen"
+                Four -> "fourteen"
+                Five -> "fifteen"
+                Six -> "sixteen"
+                Seven -> "seventeen"
+                Eight -> "eighteen"
+                Nine -> "nineteen"
+            Two -> "twenty" ++? d2
+            Three -> "thirty" ++? d2
+            Four -> "forty" ++? d2
+            Five -> "fifty" ++? d2
+            Six -> "sixty" ++? d2
+            Seven -> "seventy" ++? d2
+            Eight -> "eighty" ++? d2
+            Nine -> "ninety" ++? d2
+showDigit3 (D3 d1 d2 d3)
+    | d2 == Zero && d3 == Zero =
+        if d1 == Zero
+            then ""
+            else showDigit d1 ++ " hundred"
+    | d1 == Zero = showDigit3 (D2 d2 d3)
+    | otherwise = showDigit d1 ++ " hundred and " ++ showDigit3 (D2 d2 d3)
+
+{- |
+- @illion@: A list of illion names.
+- @acc@: The accumulator.
+- @input@: The list of digits. (Little endian.)
+-}
+showDigitsI :: List Chars -> List Chars -> List Digit -> List Chars
+showDigitsI _ acc Nil = acc
+showDigitsI Nil _ _ = error "illion is not long enough"
+showDigitsI (i :. is) acc input =
+    let s1 ++? s2 = if s2 == "" then s1 else s1 ++ ' ' :. s2
+     in case input of
+            Zero :. Zero :. Zero :. s ->
+                showDigitsI is acc s
+            d1 :. d2 :. d3 :. s ->
+                showDigitsI is (showDigit3 (D3 d3 d2 d1) ++? i :. acc) s
+            d1 :. d2 :. Nil ->
+                showDigit3 (D2 d2 d1) ++? i :. acc
+            d1 :. Nil ->
+                showDigit3 (D1 d1) ++? i :. acc
+            Nil -> acc
+
+showDigits :: List Digit -> Chars
+showDigits = unwords . showDigitsI illion Nil
+
 -- Possibly convert a character to a digit.
 fromChar ::
     Char ->
@@ -326,5 +384,25 @@ fromChar _ =
 dollars ::
     Chars ->
     Chars
-dollars =
-    error "todo: Course.Cheque#dollars"
+dollars input =
+    let dropInit = dropWhile $ \c -> not $ c /= '0' && isDigit c || c == '.'
+        (ds, cs) = revInt Nil . dropInit $ input
+        dollarPart = case ds of
+            Nil -> "zero dollars"
+            One :. Nil -> "one dollar"
+            _ -> showDigits ds ++ " dollars"
+        centPart = case cs of
+            Nil -> "zero cents"
+            Zero :. One :. _ -> "one cent"
+            d1 :. d2 :. _ -> showDigit3 (D2 d1 d2) ++ " cents"
+            d1 :. Nil -> showDigit3 (D2 d1 Zero) ++ " cents"
+     in dollarPart ++ " and " ++ centPart
+  where
+    revInt ds Nil = (ds, Nil)
+    revInt ds (c :. cs) =
+        case fromChar c of
+            Full d -> revInt (d :. ds) cs
+            Empty ->
+                if c == '.'
+                    then (ds, listOptional fromChar cs)
+                    else revInt ds cs
